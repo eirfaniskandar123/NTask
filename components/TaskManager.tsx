@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { format, isFuture, parseISO } from "date-fns";
+import { toast } from "sonner";
 import { Task, Tag, Priority } from "@/lib/types";
 import { Sidebar } from "./Sidebar";
 import { TaskList } from "./TaskList";
@@ -41,12 +42,14 @@ export default function TaskManager() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updated),
     });
+    toast.success(updated.done ? "Task marked done" : "Task reopened", { duration: 2000 });
     await fetchTasks();
   };
 
   const handleDelete = async (id: string) => {
     setTasks((prev) => prev.filter((t) => t.id !== id));
     await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+    toast.success("Task deleted", { duration: 2000 });
   };
 
   const handleEdit = async (id: string, updates: Partial<Task>) => {
@@ -55,6 +58,7 @@ export default function TaskManager() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates),
     });
+    toast.success("Task updated", { duration: 2000 });
     await fetchTasks();
   };
 
@@ -73,6 +77,7 @@ export default function TaskManager() {
     });
     if (res.ok) {
       setShowAddForm(false);
+      toast.success("Task added");
       await fetchTasks();
     }
   };
@@ -113,7 +118,7 @@ export default function TaskManager() {
   const viewLabel = staticLabels[activeView] ?? activeView;
 
   return (
-    <div className="flex h-screen bg-white overflow-hidden">
+    <div className="flex h-screen bg-white dark:bg-gray-950 overflow-hidden">
       <Sidebar
         activeView={activeView}
         setActiveView={(v) => { setActiveView(v); setPriorityFilter("all"); }}
@@ -125,12 +130,12 @@ export default function TaskManager() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <div className="flex items-start justify-between px-8 pt-8 pb-4">
           <div>
-            <h1 className="text-base font-medium text-gray-900">{viewLabel}</h1>
-            <p className="text-sm text-gray-400 mt-0.5">{format(new Date(), "EEEE, MMMM d, yyyy")}</p>
+            <h1 className="text-base font-medium text-gray-900 dark:text-gray-100">{viewLabel}</h1>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{format(new Date(), "EEEE, MMMM d, yyyy")}</p>
           </div>
           <button
             onClick={() => setShowAddForm((v) => !v)}
-            className="border border-gray-200 rounded-md px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="border border-gray-200 dark:border-gray-700 rounded-md px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             + Add task
           </button>
@@ -143,7 +148,9 @@ export default function TaskManager() {
                 key={p}
                 onClick={() => setPriorityFilter(p)}
                 className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                  priorityFilter === p ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  priorityFilter === p
+                    ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
                 }`}
               >
                 {p === "all" ? "All" : p.charAt(0).toUpperCase() + p.slice(1)}
@@ -154,19 +161,19 @@ export default function TaskManager() {
 
         <div className="px-8 pb-4">
           <div className="flex items-center gap-2">
-            <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
+            <div className="flex-1 h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gray-900 rounded-full transition-all"
+                className="h-full bg-gray-900 dark:bg-gray-100 rounded-full transition-all"
                 style={{ width: totalFiltered > 0 ? `${(doneCount / totalFiltered) * 100}%` : "0%" }}
               />
             </div>
-            <span className="text-xs text-gray-400 whitespace-nowrap">{doneCount} / {totalFiltered} done</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">{doneCount} / {totalFiltered} done</span>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-8 pb-8">
           {loading ? (
-            <div className="text-sm text-gray-400 py-8 text-center">Loading tasks…</div>
+            <div className="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">Loading tasks…</div>
           ) : (
             <TaskList
               tasks={filteredTasks}
@@ -188,7 +195,7 @@ export default function TaskManager() {
           )}
 
           {!loading && filteredTasks.length === 0 && !showAddForm && (
-            <div className="text-sm text-gray-400 py-12 text-center">No tasks here. Add one above.</div>
+            <div className="text-sm text-gray-400 dark:text-gray-500 py-12 text-center">No tasks here. Add one above.</div>
           )}
         </div>
       </div>

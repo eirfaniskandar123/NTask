@@ -1,19 +1,36 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useTheme } from "next-themes";
 import { ViewType } from "./TaskManager";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tag } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { SettingsModal } from "./SettingsModal";
+import { DigestPreviewModal } from "./DigestPreviewModal";
 import {
   LayoutList,
   CalendarDays,
   CalendarArrowUp,
   RefreshCw,
   CheckCircle2,
+  Settings,
+  Mail,
   LogOut,
+  ChevronUp,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react";
+
+interface Stats {
+  completedThisWeek: number;
+  streak: number;
+  total: number;
+  done: number;
+}
 
 const navItems = [
   { key: "all",       label: "All tasks",  icon: LayoutList },
@@ -33,6 +50,29 @@ interface SidebarProps {
 
 export function Sidebar({ activeView, setActiveView, counts, tags, onTagsChange }: SidebarProps) {
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("/api/stats")
+      .then((r) => r.json())
+      .then(setStats);
+  }, [counts]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [menuOpen]);
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -43,9 +83,9 @@ export function Sidebar({ activeView, setActiveView, counts, tags, onTagsChange 
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-[200px] flex-col h-full border-r border-gray-100 bg-[#F9F9F8] flex-shrink-0">
+      <aside className="hidden md:flex w-[200px] flex-col h-full border-r border-gray-100 dark:border-gray-800 bg-[#F9F9F8] dark:bg-gray-900 flex-shrink-0">
         <div className="flex-1 overflow-y-auto px-3 py-5">
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-2 mb-3">
+          <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest px-2 mb-3">
             My workspace
           </p>
 
@@ -56,8 +96,8 @@ export function Sidebar({ activeView, setActiveView, counts, tags, onTagsChange 
                 onClick={() => setActiveView(key)}
                 className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-sm transition-colors ${
                   activeView === key
-                    ? "bg-gray-200 text-gray-900 font-medium"
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-medium"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                 }`}
               >
                 <span className="flex items-center gap-2">
@@ -75,7 +115,7 @@ export function Sidebar({ activeView, setActiveView, counts, tags, onTagsChange 
 
           <Separator className="my-4" />
 
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-2 mb-3">
+          <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest px-2 mb-3">
             Tags
           </p>
           <div className="space-y-0.5">
@@ -85,8 +125,8 @@ export function Sidebar({ activeView, setActiveView, counts, tags, onTagsChange 
                 onClick={() => setActiveView(name)}
                 className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors ${
                   activeView === name
-                    ? "bg-gray-200 text-gray-900 font-medium"
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-medium"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                 }`}
               >
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
@@ -98,32 +138,116 @@ export function Sidebar({ activeView, setActiveView, counts, tags, onTagsChange 
 
         {/* Footer */}
         <div className="px-3 pb-4 space-y-2">
-          <div className="bg-blue-50 border border-blue-100 rounded-md px-3 py-2">
-            <p className="text-[11px] text-blue-600 font-medium">Email digest: 8:00 AM</p>
-            <p className="text-[10px] text-blue-400 mt-0.5">Weekdays only</p>
-          </div>
-          <div className="flex items-center justify-between px-1">
-            <SettingsModal tags={tags} onTagsChange={onTagsChange} />
+          {stats && (
+            <div className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-md px-3 py-2">
+              <div className="flex justify-between text-[10px] text-gray-400 dark:text-gray-500 mb-1.5">
+                <span>This week</span>
+                {stats.streak > 0 && (
+                  <span className="text-orange-500 font-medium">🔥 {stats.streak}d streak</span>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <div>
+                  <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{stats.completedThisWeek}</span>
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-1">done</span>
+                </div>
+                <div>
+                  <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{stats.total - stats.done}</span>
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-1">pending</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Workspace dropdown */}
+          <div className="relative" ref={menuRef}>
             <button
-              onClick={handleLogout}
-              className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600 transition-colors p-1 rounded hover:bg-gray-100"
-              title="Sign out"
+              onClick={() => setMenuOpen((v) => !v)}
+              className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-xs transition-colors ${
+                menuOpen
+                  ? "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
+              }`}
             >
-              <LogOut size={12} />
-              Sign out
+              <span className="flex items-center gap-1.5">
+                <Settings size={12} />
+                Workspace
+              </span>
+              <ChevronUp
+                size={12}
+                className={`transition-transform duration-150 ${menuOpen ? "" : "rotate-180"}`}
+              />
             </button>
+
+            {menuOpen && (
+              <div className="absolute bottom-full left-0 right-0 mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 z-50">
+                <button
+                  onClick={() => { setSettingsOpen(true); setMenuOpen(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <Settings size={12} className="text-gray-400 dark:text-gray-500" />
+                  Settings
+                </button>
+                <button
+                  onClick={() => { setPreviewOpen(true); setMenuOpen(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <Mail size={12} className="text-gray-400 dark:text-gray-500" />
+                  Preview email
+                </button>
+                {/* Theme toggle row */}
+                <div className="flex items-center gap-1 px-3 py-2">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 flex-1">Theme</span>
+                  {(["light", "dark", "system"] as const).map((t) => {
+                    const Icon = t === "light" ? Sun : t === "dark" ? Moon : Monitor;
+                    return (
+                      <button
+                        key={t}
+                        onClick={() => { setTheme(t); setMenuOpen(false); }}
+                        title={t.charAt(0).toUpperCase() + t.slice(1)}
+                        className={cn(
+                          "p-1.5 rounded transition-colors",
+                          theme === t
+                            ? "bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-gray-100"
+                            : "text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        )}
+                      >
+                        <Icon size={12} />
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+                >
+                  <LogOut size={12} />
+                  Sign out
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </aside>
 
+      {/* Modals */}
+      <SettingsModal
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        tags={tags}
+        onTagsChange={onTagsChange}
+      />
+      <DigestPreviewModal open={previewOpen} onOpenChange={setPreviewOpen} />
+
       {/* Mobile bottom tab bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 flex">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex">
         {navItems.slice(0, 4).map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             onClick={() => setActiveView(key)}
             className={`flex-1 flex flex-col items-center gap-1 py-2 text-[10px] transition-colors ${
-              activeView === key ? "text-gray-900 font-medium" : "text-gray-400"
+              activeView === key ? "text-gray-900 dark:text-gray-100 font-medium" : "text-gray-400 dark:text-gray-600"
             }`}
           >
             <Icon size={16} />

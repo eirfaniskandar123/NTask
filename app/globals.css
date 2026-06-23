@@ -72,6 +72,9 @@
   pointer-events: none;
   height: 0;
 }
+.dark .tiptap-editor p.is-editor-empty:first-child::before {
+  color: #4b5563;
+}
 
 /* Note preview (rendered HTML in task card) */
 .note-preview p { margin: 0; }

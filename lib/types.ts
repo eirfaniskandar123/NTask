@@ -20,6 +20,14 @@ export interface Task {
   updated_at: string;
 }
 
+export interface Subtask {
+  id: string;
+  task_id: string;
+  title: string;
+  done: boolean;
+  created_at: string;
+}
+
 export type CreateTaskInput = {
   title: string;
   note?: string;

@@ -62,7 +62,7 @@ export function AddTaskForm({ tags, onAdd, onCancel }: AddTaskFormProps) {
   };
 
   return (
-    <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+    <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-gray-50 dark:bg-gray-900">
       <div className="space-y-3">
         <Input
           placeholder="Task title"
@@ -72,14 +72,14 @@ export function AddTaskForm({ tags, onAdd, onCancel }: AddTaskFormProps) {
             if (e.key === "Escape") onCancel();
           }}
           autoFocus
-          className="bg-white"
+          className="bg-white dark:bg-gray-800"
         />
 
         <TiptapEditor content={note} onChange={setNote} />
 
         <div className="flex gap-2 flex-wrap">
           <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
-            <SelectTrigger className="w-[110px] bg-white text-sm h-9">
+            <SelectTrigger className="w-[110px] bg-white dark:bg-gray-800 text-sm h-9">
               <SelectValue placeholder="Priority" />
             </SelectTrigger>
             <SelectContent>
@@ -90,7 +90,7 @@ export function AddTaskForm({ tags, onAdd, onCancel }: AddTaskFormProps) {
           </Select>
 
           <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="w-[130px] bg-white text-sm h-9">
+            <SelectTrigger className="w-[130px] bg-white dark:bg-gray-800 text-sm h-9">
               <SelectValue placeholder="Tag" />
             </SelectTrigger>
             <SelectContent>
@@ -110,7 +110,7 @@ export function AddTaskForm({ tags, onAdd, onCancel }: AddTaskFormProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className={cn("h-9 px-3 font-normal bg-white text-sm", !date && "text-muted-foreground")}
+                className={cn("h-9 px-3 font-normal bg-white dark:bg-gray-800 text-sm", !date && "text-muted-foreground")}
               >
                 <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
                 {date ? format(date, "MMM d, yyyy") : "Due date"}
@@ -145,7 +145,7 @@ export function AddTaskForm({ tags, onAdd, onCancel }: AddTaskFormProps) {
             onCheckedChange={(v) => setEveryday(!!v)}
             className="rounded-full"
           />
-          <span className="text-sm text-gray-600">Notify every weekday (no due date)</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400">Notify every weekday (no due date)</span>
         </label>
 
         <div className="flex justify-end gap-2 pt-1">

@@ -1,0 +1,17 @@
+{
+  "name": "NTask+",
+  "short_name": "NTask+",
+  "description": "Personal task manager with daily email digest",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#111827",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

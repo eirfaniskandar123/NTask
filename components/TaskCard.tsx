@@ -6,6 +6,7 @@ import { Trash2, Calendar, Pencil } from "lucide-react";
 import { Task, Tag } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { EditTaskForm } from "./EditTaskForm";
+import { TaskDetailModal } from "./TaskDetailModal";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,7 @@ interface TaskCardProps {
 export function TaskCard({ task, tags, onToggleDone, onDelete, onEdit }: TaskCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const priority = priorityConfig[task.priority] ?? priorityConfig.medium;
@@ -74,7 +76,7 @@ export function TaskCard({ task, tags, onToggleDone, onDelete, onEdit }: TaskCar
     <>
       <div
         className={cn(
-          "group flex items-start gap-3 p-3 rounded-xl border border-gray-100 hover:border-gray-300 transition-all",
+          "group flex items-start gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 transition-all",
           task.done && "opacity-50"
         )}
         style={{ borderWidth: "0.5px" }}
@@ -85,13 +87,13 @@ export function TaskCard({ task, tags, onToggleDone, onDelete, onEdit }: TaskCar
           className={cn(
             "mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
             task.done
-              ? "bg-gray-900 border-gray-900"
-              : "border-gray-300 hover:border-gray-500"
+              ? "bg-gray-900 dark:bg-gray-100 border-gray-900 dark:border-gray-100"
+              : "border-gray-300 dark:border-gray-600 hover:border-gray-500 dark:hover:border-gray-400"
           )}
           aria-label={task.done ? "Mark undone" : "Mark done"}
         >
           {task.done && (
-            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <svg className="w-3 h-3 text-white dark:text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           )}
@@ -99,12 +101,18 @@ export function TaskCard({ task, tags, onToggleDone, onDelete, onEdit }: TaskCar
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <p className={cn("text-sm font-medium text-gray-900", task.done && "line-through text-gray-400")}>
+          <button
+            onClick={() => setDetailOpen(true)}
+            className={cn(
+              "text-sm font-medium text-gray-900 dark:text-gray-100 text-left hover:underline decoration-gray-300 dark:decoration-gray-600 underline-offset-2",
+              task.done && "line-through text-gray-400 dark:text-gray-500"
+            )}
+          >
             {task.title}
-          </p>
+          </button>
 
           {task.note && (
-            <p className="text-xs text-gray-400 mt-0.5 truncate">
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
               {stripHtml(task.note)}
             </p>
           )}
@@ -117,13 +125,13 @@ export function TaskCard({ task, tags, onToggleDone, onDelete, onEdit }: TaskCar
               {priority.label}
             </span>
 
-            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium bg-gray-100 text-gray-600">
+            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: catColor }} />
               {task.category}
             </span>
 
             {task.everyday && (
-              <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-[#E6F1FB] text-[#185FA5]">
+              <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-[#E6F1FB] text-[#185FA5] dark:bg-blue-950 dark:text-blue-300">
                 ↺ Every weekday
               </span>
             )}
@@ -131,7 +139,7 @@ export function TaskCard({ task, tags, onToggleDone, onDelete, onEdit }: TaskCar
             {task.due_date && (
               <span className={cn(
                 "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
-                isOverdue ? "bg-[#FCEBEB] text-[#A32D2D]" : "bg-gray-100 text-gray-600"
+                isOverdue ? "bg-[#FCEBEB] text-[#A32D2D] dark:bg-red-950 dark:text-red-400" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
               )}>
                 <Calendar size={10} />
                 {format(parseISO(task.due_date + "T00:00:00"), "MMM d")}
@@ -145,7 +153,7 @@ export function TaskCard({ task, tags, onToggleDone, onDelete, onEdit }: TaskCar
         <div className="flex-shrink-0 flex items-center gap-0.5 mt-0.5">
           <button
             onClick={() => setIsEditing(true)}
-            className="p-1.5 rounded text-gray-300 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             aria-label="Edit task"
             title="Edit"
           >
@@ -153,7 +161,7 @@ export function TaskCard({ task, tags, onToggleDone, onDelete, onEdit }: TaskCar
           </button>
           <button
             onClick={() => setDeleteOpen(true)}
-            className="p-1.5 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+            className="p-1.5 rounded text-gray-300 dark:text-gray-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
             aria-label="Delete task"
             title="Delete"
           >
@@ -161,6 +169,14 @@ export function TaskCard({ task, tags, onToggleDone, onDelete, onEdit }: TaskCar
           </button>
         </div>
       </div>
+
+      {/* Task detail modal */}
+      <TaskDetailModal
+        task={task}
+        tags={tags}
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+      />
 
       {/* Delete confirmation dialog */}
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>

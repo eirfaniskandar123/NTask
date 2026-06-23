@@ -51,21 +51,21 @@ export function EditTaskForm({ task, tags, saving, onSave, onCancel }: EditTaskF
   };
 
   return (
-    <div className="border border-blue-200 rounded-xl p-4 bg-blue-50/30 space-y-3">
+    <div className="border border-blue-200 dark:border-blue-900 rounded-xl p-4 bg-blue-50/30 dark:bg-blue-950/20 space-y-3">
       <Input
         placeholder="Task title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Escape") onCancel(); }}
         autoFocus
-        className="bg-white"
+        className="bg-white dark:bg-gray-800"
       />
 
       <TiptapEditor content={note} onChange={setNote} />
 
       <div className="flex gap-2 flex-wrap">
         <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
-          <SelectTrigger className="w-[110px] bg-white text-sm h-9">
+          <SelectTrigger className="w-[110px] bg-white dark:bg-gray-800 text-sm h-9">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
@@ -76,7 +76,7 @@ export function EditTaskForm({ task, tags, saving, onSave, onCancel }: EditTaskF
         </Select>
 
         <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger className="w-[130px] bg-white text-sm h-9">
+          <SelectTrigger className="w-[130px] bg-white dark:bg-gray-800 text-sm h-9">
             <SelectValue placeholder="Tag" />
           </SelectTrigger>
           <SelectContent>
@@ -96,7 +96,7 @@ export function EditTaskForm({ task, tags, saving, onSave, onCancel }: EditTaskF
             <Button
               variant="outline"
               size="sm"
-              className={cn("h-9 px-3 font-normal bg-white text-sm", !date && "text-muted-foreground")}
+              className={cn("h-9 px-3 font-normal bg-white dark:bg-gray-800 text-sm", !date && "text-muted-foreground")}
             >
               <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
               {date ? format(date, "MMM d, yyyy") : "Due date"}
@@ -131,7 +131,7 @@ export function EditTaskForm({ task, tags, saving, onSave, onCancel }: EditTaskF
           onCheckedChange={(v) => setEveryday(!!v)}
           className="rounded-full"
         />
-        <span className="text-sm text-gray-600">Notify every weekday</span>
+        <span className="text-sm text-gray-600 dark:text-gray-400">Notify every weekday</span>
       </label>
 
       <div className="flex justify-end gap-2 pt-1">
