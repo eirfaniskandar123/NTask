@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
-import { Priority, Category } from "@/lib/types";
+import { Priority, Tag } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,25 +16,32 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
+import { TiptapEditor } from "@/components/TiptapEditor";
 import { cn } from "@/lib/utils";
 
 interface AddTaskFormProps {
+  tags: Tag[];
   onAdd: (input: {
     title: string;
     note: string;
     priority: Priority;
-    category: Category;
+    category: string;
     due_date: string | null;
     everyday: boolean;
   }) => void;
   onCancel: () => void;
 }
 
-export function AddTaskForm({ onAdd, onCancel }: AddTaskFormProps) {
+export function AddTaskForm({ tags, onAdd, onCancel }: AddTaskFormProps) {
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
-  const [category, setCategory] = useState<Category>("Dev");
+  const [category, setCategory] = useState(tags[0]?.name ?? "");
+
+  // If tags weren't loaded when form mounted, set default once they arrive
+  useEffect(() => {
+    if (!category && tags.length > 0) setCategory(tags[0].name);
+  }, [tags, category]);
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [everyday, setEveryday] = useState(false);
   const [calOpen, setCalOpen] = useState(false);
@@ -62,22 +69,15 @@ export function AddTaskForm({ onAdd, onCancel }: AddTaskFormProps) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") handleSubmit();
             if (e.key === "Escape") onCancel();
           }}
           autoFocus
           className="bg-white"
         />
 
-        <Input
-          placeholder="Notes (optional)"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          className="bg-white"
-        />
+        <TiptapEditor content={note} onChange={setNote} />
 
         <div className="flex gap-2 flex-wrap">
-          {/* Priority */}
           <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
             <SelectTrigger className="w-[110px] bg-white text-sm h-9">
               <SelectValue placeholder="Priority" />
@@ -89,29 +89,28 @@ export function AddTaskForm({ onAdd, onCancel }: AddTaskFormProps) {
             </SelectContent>
           </Select>
 
-          {/* Category */}
-          <Select value={category} onValueChange={(v) => setCategory(v as Category)}>
-            <SelectTrigger className="w-[120px] bg-white text-sm h-9">
-              <SelectValue placeholder="Category" />
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger className="w-[130px] bg-white text-sm h-9">
+              <SelectValue placeholder="Tag" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Dev">Dev</SelectItem>
-              <SelectItem value="Design">Design</SelectItem>
-              <SelectItem value="Meeting">Meeting</SelectItem>
-              <SelectItem value="Personal">Personal</SelectItem>
+              {tags.map((t) => (
+                <SelectItem key={t.id} value={t.name}>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: t.color }} />
+                    {t.name}
+                  </span>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
-          {/* Date picker */}
           <Popover open={calOpen} onOpenChange={setCalOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
-                className={cn(
-                  "h-9 px-3 font-normal bg-white text-sm",
-                  !date && "text-muted-foreground"
-                )}
+                className={cn("h-9 px-3 font-normal bg-white text-sm", !date && "text-muted-foreground")}
               >
                 <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
                 {date ? format(date, "MMM d, yyyy") : "Due date"}
@@ -121,10 +120,7 @@ export function AddTaskForm({ onAdd, onCancel }: AddTaskFormProps) {
               <Calendar
                 mode="single"
                 selected={date}
-                onSelect={(d) => {
-                  setDate(d);
-                  setCalOpen(false);
-                }}
+                onSelect={(d) => { setDate(d); setCalOpen(false); }}
                 initialFocus
               />
               {date && (
@@ -133,10 +129,7 @@ export function AddTaskForm({ onAdd, onCancel }: AddTaskFormProps) {
                     variant="ghost"
                     size="sm"
                     className="w-full text-xs text-gray-500"
-                    onClick={() => {
-                      setDate(undefined);
-                      setCalOpen(false);
-                    }}
+                    onClick={() => { setDate(undefined); setCalOpen(false); }}
                   >
                     Clear date
                   </Button>
@@ -146,28 +139,18 @@ export function AddTaskForm({ onAdd, onCancel }: AddTaskFormProps) {
           </Popover>
         </div>
 
-        {/* Everyday checkbox */}
         <label className="flex items-center gap-2 cursor-pointer select-none">
           <Checkbox
             checked={everyday}
             onCheckedChange={(v) => setEveryday(!!v)}
             className="rounded-full"
           />
-          <span className="text-sm text-gray-600">
-            Notify every weekday (no due date)
-          </span>
+          <span className="text-sm text-gray-600">Notify every weekday (no due date)</span>
         </label>
 
-        {/* Buttons */}
         <div className="flex justify-end gap-2 pt-1">
-          <Button variant="outline" size="sm" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleSubmit}
-            disabled={!title.trim() || submitting}
-          >
+          <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
+          <Button size="sm" onClick={handleSubmit} disabled={!title.trim() || submitting}>
             {submitting ? "Adding…" : "Add task"}
           </Button>
         </div>

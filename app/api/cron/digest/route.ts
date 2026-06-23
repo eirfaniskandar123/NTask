@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { getServiceSupabase } from "@/lib/supabase";
@@ -5,22 +7,19 @@ import { buildDigestHtml } from "@/lib/email";
 import { format } from "date-fns";
 
 export async function GET(req: NextRequest) {
-  // Verify cron secret
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const today = new Date();
-  const dayOfWeek = today.getDay(); // 0=Sun, 6=Sat
+  const dayOfWeek = today.getDay();
 
-  // Skip weekends
   if (dayOfWeek === 0 || dayOfWeek === 6) {
     return NextResponse.json({ skipped: "Weekend" });
   }
 
-  // Check public holidays via Google Calendar
-  const calendarId = process.env.HOLIDAY_CALENDAR_ID ?? "en.indonesia#holiday@group.v.calendar.google.com";
+  const calendarId = process.env.HOLIDAY_CALENDAR_ID ?? "en.malaysia#holiday@group.v.calendar.google.com";
   const apiKey = process.env.GOOGLE_CALENDAR_API_KEY;
 
   if (apiKey) {
@@ -37,36 +36,33 @@ export async function GET(req: NextRequest) {
       const calRes = await fetch(calUrl);
       const calData = await calRes.json();
       if (calData.items && calData.items.length > 0) {
-        return NextResponse.json({
-          skipped: "Public holiday",
-          holiday: calData.items[0]?.summary,
-        });
+        return NextResponse.json({ skipped: "Public holiday", holiday: calData.items[0]?.summary });
       }
     } catch {
-      // If calendar check fails, proceed with sending
+      // proceed if calendar check fails
     }
   }
 
-  // Fetch tasks
   const supabase = getServiceSupabase();
   const todayStr = format(today, "yyyy-MM-dd");
 
-  const { data: tasks, error } = await supabase
-    .from("tasks")
-    .select("*")
-    .eq("done", false)
-    .or(`everyday.eq.true,due_date.lte.${todayStr}`);
+  const [{ data: tasks, error }, { data: settingsRows }, { data: tagRows }] = await Promise.all([
+    supabase.from("tasks").select("*").eq("done", false).or(`everyday.eq.true,due_date.lte.${todayStr}`),
+    supabase.from("app_settings").select("key, value"),
+    supabase.from("tags").select("name, color"),
+  ]);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!tasks || tasks.length === 0) return NextResponse.json({ skipped: "No pending tasks" });
 
-  if (!tasks || tasks.length === 0) {
-    return NextResponse.json({ skipped: "No pending tasks" });
-  }
+  const settings: Record<string, string> = {};
+  for (const row of settingsRows ?? []) settings[row.key] = row.value;
+  const sortBy = settings["digest_sort_by"] === "tag" ? "tag" : "priority";
 
-  // Build and send email
-  const html = buildDigestHtml(tasks, today);
+  const tagColors: Record<string, string> = {};
+  for (const row of tagRows ?? []) tagColors[row.name] = row.color;
+
+  const html = buildDigestHtml(tasks, today, sortBy, tagColors);
   const dayLabel = format(today, "EEEE, MMMM d, yyyy");
 
   const transporter = nodemailer.createTransport({
@@ -84,9 +80,5 @@ export async function GET(req: NextRequest) {
     html,
   });
 
-  return NextResponse.json({
-    sent: true,
-    taskCount: tasks.length,
-    to: process.env.DIGEST_RECIPIENT,
-  });
+  return NextResponse.json({ sent: true, taskCount: tasks.length, to: process.env.DIGEST_RECIPIENT });
 }

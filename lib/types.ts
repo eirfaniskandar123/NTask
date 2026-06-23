@@ -1,5 +1,11 @@
 export type Priority = "high" | "medium" | "low";
-export type Category = "Dev" | "Design" | "Meeting" | "Personal";
+export type Category = string;
+
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
 
 export interface Task {
   id: string;
